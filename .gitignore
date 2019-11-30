@@ -1,0 +1,7 @@
+montador
+ligador
+simulador
+*.pre
+*.obj
+*.e
+*.o
