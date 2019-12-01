@@ -133,11 +133,7 @@ void twoFiles(string firstFile, obj* object, bool realloc) {
   }
 
   for (int j = 0; j < (int)aux.size(); j += 2) {
-    if (realloc) {
-      object->uses.push_back({aux[j], (stoi(aux[j + 1]) + obj1.length)});
-    } else {
-      object->uses.push_back({aux[j], stoi(aux[j + 1])});
-    }
+    object->uses.push_back({aux[j], stoi(aux[j + 1])});
   }
 
   // Pegando a tabela de Definições
@@ -195,8 +191,8 @@ int main(int argc, char* argv[]) {
     cout << "[main] "
          << "Segundo arquivo..." << endl;
     twoFiles(argv[2], &obj2, true);
-    reallocate();
     uzumaki();
+    reallocate();
     linker();
   } else {
     cout << "[main] "
@@ -207,53 +203,3 @@ int main(int argc, char* argv[]) {
   }
   return 0;
 }
-
-/* Somar o fator de corre¸c˜ao as instru¸c˜oes que cont´em um endere¸co de
-   mem´oria ainda n˜ao corrigidas Corrigir os endere¸cos relativos de acordo com
-   o fator de corre¸c˜ao Gerar o c´odigo execut´avel
-
-                */
-
-/*
-goritmo de Liga¸c˜ao
-[ ] 1.− Alinha os c´odigos objeto a serem ligados
-[x] 2.− Constr´oi tabela com fatores de corre¸c˜ao
-[x] 3.− Constr´oi tabela global de defini¸c˜oes, utilizando os fatores de
-corre¸c˜ao.
-4.− Para cada objeto:
-[ ] 4.1.− Corrigir os endere¸cos das entradas
-da tabela de uso, utilizando a tabela global de defini¸c˜oes
-[ ] 4.2.− Corrigir
-os endere¸cos do c´odigo usando os fatores de corre¸c˜ao
-[ ] 4.3.− Corrigir os
-endere¸cos relativos usando os fatores de corre¸c˜ao
-[ ] 5.− Gerar c´odigo
-execut´avel e salvar em arquivo
-*/
-
-/*
-  H: fat_mod_a
-  H: 13
-  H: 0000000001000
-  H: 1 MOD_B 9
-  H: 2 FAT 4 N 13
-  T: 12 13 10 13 2 14 8 10 5 0 13 13 14 | 0 1
-*/
-
-/*
-Pegar na tabela de uso a posição que o simbolo aparece
-Pegar na TGD o valor do simbolo
-*/
-
-/**
-2*i / 2*i + 1
-for(int i=0;i<{tamanho que a gente pega, dos pares};i++)
-i=0
-(0)DET (1)2
-i=1
-(2)ASD (3)12
-i=2
-(4)ADD (5)42
-i=3
-(6)... (7)...
-*/
