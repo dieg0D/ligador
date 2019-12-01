@@ -36,6 +36,7 @@ typedef struct symbol {
   bool defined;
   bool constante;
   bool externo;
+  bool publico;
   vector<int> list;
 } symbol;
 
@@ -43,19 +44,17 @@ typedef struct symbol {
 typedef struct definitions {
   string name;
   int value;
-  bool defined;
-  bool constante;
-  vector<int> list;
 } definitions;
 
 // Struct da tabela de uso
 typedef struct use {
   string name;
   int address;
-  bool defined;
-  bool constante;
-  vector<int> list;
 } use;
+
+// Tabela de Uso - indica os s´ımbolos externos utilizados no m´odulo.
+// Tabela de Defini¸c˜oes - indica os s´ımbolos p´ublicos e seus atributos (´e
+// uma fra¸c˜ao da TS).
 
 vector<instruction> instruction_table; /*Tabela de instruções*/
 vector<directive> directive_table;     /*Tabela de diretivas*/
@@ -71,17 +70,19 @@ fstream preFile;
 ofstream objFile;
 
 int positionCount = 0, sectionTextLine = -1, sectionDataLine = -1,
-    stopLine = -1, lineCount = 0;
-int now_const = 0, now_extern = 0;
+    stopLine = -1, lineCount = 0, stopPosition = -1;
+int now_const = 0, now_extern = 0, now_public = 0, textLength = 0;
 
 void global_reset() {
   positionCount = 0;
   sectionTextLine = -1;
   sectionDataLine = -1;
   stopLine = -1;
+  stopPosition = -1;
   lineCount = 0;
   now_const = 0;
   now_extern = 0;
+  textLength = 0;
   symbol_table.clear();
   errors.clear();
   assembled_lines.clear();
@@ -388,6 +389,32 @@ int tokenErrors(string label) {
   return 0;
 }
 
+void addDefinitionTable() {
+  int achou = 0;
+  for (symbol s : symbol_table) {
+    if (s.publico) {
+      for (definitions d : definitions_table) {
+        if (d.name == s.name) {
+          achou++;
+        }
+      }
+      if (!achou) {
+        definitions_table.push_back({s.name, s.value});
+      }
+    }
+  }
+}
+
+void updateDefinitionTable() {
+  for (symbol s : symbol_table) {
+    for (definitions d : definitions_table) {
+      if (d.name == s.name) {
+        d.value = s.value;
+      }
+    }
+  }
+}
+
 // SUCESSO
 void symbolTableCheck() {
   // percorre toda a tabela de símbolos e se tiver algum undefined, encerra com
@@ -395,16 +422,27 @@ void symbolTableCheck() {
   for (symbol s : symbol_table) {
     cout << "[symbolTableCheck] "
          << "Símbolo " << s.name << "  " << s.value
-         << (s.defined ? " T " : " F ") << endl;
+         << (s.defined ? " T " : " F ") << (s.externo ? "externo" : "")
+         << (s.publico ? "publico" : "") << endl;
 
     if (s.defined == false) {
       cout << "[symbolTableCheck] "
            << "ERRO SEMANTICO: Símbolo " << s.name
            << " não definido Linha: " << lineCount << endl;
 
-      getchar();
-      exit(-1);
+      updateDefinitionTable();
     }
+  }
+
+  cout << endl;
+  for (use u : use_table) {
+    cout << "[UseTableCheck] "
+         << "name " << u.name << "  " << u.address << endl;
+  }
+  cout << endl;
+  for (definitions d : definitions_table) {
+    cout << "[DefinitionsTableCheck] "
+         << "name " << d.name << "  " << d.value << endl;
   }
 }
 
@@ -491,29 +529,33 @@ int lineHasSymbol(string op1, string op2, int lineCount) {
 
 int addSymbolToTable(string name, int position) {
   bool konst = false;
-  bool esterno = false;
+  // bool publico = false;
   if (now_const) {
     konst = true;
     now_const = 0;
   }
-  if (now_extern){
-    esterno = true;
-    now_extern = 0;
-  }
+  // if (now_public) {
+  //   cout << name << " Tá como PUBLIC" << endl;
+  //   publico = true;
+  //   now_public = 0;
+  // }
   vector<int> lista;
   lista.push_back(position);
-  symbol s = {name, -1, false, konst, esterno, lista};
+  symbol s = {name, -1, false, konst, false, false, lista};
   symbol_table.push_back(s);
+  addDefinitionTable();
   return 0;
 }
 
 // PASSO_7
 int addEntryToSymbolOcurrenceList(string simbolo, int position) {
   bool konst = false;
+
   if (now_const) {
     konst = true;
     now_const = 0;
   }
+
   int i;
   for (i = 0; i < (int)symbol_table.size(); i++) {
     if (symbol_table[i].name == simbolo) {
@@ -527,6 +569,33 @@ int addEntryToSymbolOcurrenceList(string simbolo, int position) {
 
 // PARA SIMBOLOS COM +
 void getValueWithOffsetFromST(string simbolo) {}
+
+void pushToUseTable(string simbolo, int pos) {
+  for (symbol s : symbol_table) {
+    if (s.name == simbolo) {
+      if (s.externo == true) {
+        use uso;
+        uso.address = pos;
+        uso.name = simbolo;
+        use_table.push_back(uso);
+      }
+    }
+  }
+}
+
+int handlePublicDirective(string name, int position) {
+  cout << "Tratando diretiva " << name << " como PUBLIC" << endl;
+  for (int i = 0; i < (int)symbol_table.size(); i++) {
+    if (symbol_table[i].name == name) {
+      symbol_table[i].publico = true;
+
+      cout << name << " está como "
+           << (symbol_table[i].publico ? "publico" : "") << endl;
+    }
+  }
+
+  return 0;
+}
 
 int searchSTForSymbol(string simbolo, int pos) {
   int is_vector = 0;
@@ -564,7 +633,6 @@ int searchSTForSymbol(string simbolo, int pos) {
       if (!s.defined) {  // Não ta definido
         // VAI PARA PASSO_7
         addEntryToSymbolOcurrenceList(simbolo, pos);
-      } else {
       }
       // VAI PARA PASSO_3
       return 0;
@@ -598,11 +666,18 @@ string consulST(string name, int pos) {
 int addOrDefineLabelinTable(string name, string inst, int pos) {
   bool konst = false;
   bool esterno = false;
+  bool publico = false;
+
   if (inst == "CONST") {
     konst = true;
   }
+
   if (inst == "EXTERN") {
     esterno = true;
+  }
+
+  if (inst == "PUBLIC") {
+    publico = true;
   }
 
   int tam = symbol_table.size();
@@ -611,14 +686,16 @@ int addOrDefineLabelinTable(string name, string inst, int pos) {
       symbol_table[k].value = pos;
       symbol_table[k].constante = konst;
       symbol_table[k].externo = esterno;
+      symbol_table[k].publico = publico;
       symbol_table[k].defined = true;
       return 0;
     }
   }
   vector<int> list;
   list.push_back(-1);
-  symbol s = {name, pos, true, konst, esterno, list};
+  symbol s = {name, pos, true, konst, esterno, publico, list};
   // PASSO 4
+
   symbol_table.push_back(s);
   return 0;
 }
@@ -635,12 +712,20 @@ void singlePass(string fileName) {
     lineCount++;
     // cout << "Linha " << lineCount << " : " << line << endl;
     tokens = tokeniza(line);
+    /* tokens[0] = label
+     * tokens[1] = instrução/diretiva
+     * tokens[2] = operando 1
+     * tokens[3] = operando 2
+     */
 
     if (tokens.at(1) == "SECTION") {
       if (tokens.at(2) == "TEXT") {
         sectionTextLine = lineCount;
       } else if (tokens.at(2) == "DATA") {
         sectionDataLine = lineCount;
+        if (sectionDataLine > sectionTextLine) {
+          textLength = positionCount;
+        }
       } else {
         cout << "ERRO SEMANTICO: seção inválida! Linha: " << lineCount << endl;
         exit(-1);
@@ -650,6 +735,10 @@ void singlePass(string fileName) {
 
     if (tokens.at(1) == "STOP") {
       stopLine = lineCount;
+      if (sectionDataLine < sectionTextLine) {
+        textLength = positionCount;
+      }
+      stopPosition = positionCount;
     }
 
     if (tokens.at(0) != "") {
@@ -661,7 +750,16 @@ void singlePass(string fileName) {
       }
 
       addOrDefineLabelinTable(tokens.at(0), tokens.at(1), positionCount);
+      // Se tem label e uma operação com uma "variavel"
+
+      if (tokens.at(2) != "") {
+        pushToUseTable(tokens.at(2), positionCount + 1);
+      }
     } else {
+      //  addOrDefineLabelinTable(tokens.at(2), tokens.at(1), positionCount);
+      if (tokens.at(2) != "") {
+        pushToUseTable(tokens.at(2), positionCount + 1);
+      }
       // cout << "NÃO TEM LABEL" << endl;
     }
     // PASSO 2
@@ -750,6 +848,8 @@ void singlePass(string fileName) {
             // Faz nada
           } else if (tokens.at(1) == "PUBLIC") {
             searchSTForSymbol(tokens.at(2), positionCount + 1);
+            handlePublicDirective(tokens.at(2), positionCount + 1);
+            // addDefinitionTable();
           } else if (tokens.at(1) == "EXTERN") {
             now_extern = 1;
             searchSTForSymbol(tokens.at(0), positionCount + 1);
@@ -887,20 +987,51 @@ void singlePass(string fileName) {
             getchar();
             exit(-1);
           }
-
           break;
         }
       }
     }
   }
+  if ((sectionDataLine < sectionTextLine) && stopPosition == -1) {
+    textLength = positionCount;
+  }
   preFile.close();
+  updateDefinitionTable();
   symbolTableCheck();
 
   inputfile.open((fileName).c_str());
-  int offset = fileName.length() - 3;
-  fileName.replace(offset, 3, "obj");
+  int offset = fileName.length() - 4;
+  string printfileName = fileName.replace(offset, 4, "");
+  fileName.replace(offset, 4, ".obj");
   ofstream outfile(fileName);
-
+  outfile << "H: " << printfileName << endl;
+  outfile << "H: " << textLength - 1 << endl;
+  outfile << "H: ";
+  for (int w = 0; w < textLength; w++) {
+    int flag = 0;
+    for (use u : use_table) {
+      if (u.address == w) {
+        flag = 1;
+      }
+    }
+    if (flag == 1) {
+      outfile << "1";
+    } else {
+      outfile << "0";
+    }
+  }
+  outfile << endl;
+  outfile << "H: " << use_table.size();
+  for (use u : use_table) {
+    outfile << " " << u.name << " " << u.address;
+  }
+  outfile << endl;
+  outfile << "H: " << definitions_table.size();
+  for (definitions d : definitions_table) {
+    outfile << " " << d.name << " " << d.value;
+  }
+  outfile << endl;
+  outfile << "T: ";
   int j = 0;
   for (auto pre : prelinhas) {
     for (int i = 0; i < (int)pre.size(); i++) {
@@ -957,8 +1088,8 @@ vector<string> lineParsing(string line, ifstream *inputfile, int *line_count) {
       break;
     }
     if ((wordsAux.size() != 1) &&
-        (wordsAux[0].find(":") !=
-         string::npos)) { /*Caso só tenha a label ele junta com a outra linha*/
+        (wordsAux[0].find(":") != string::npos)) { /*Caso só tenha a label ele
+                                                      junta com a outra linha*/
       finish = 1;
     } else {
       getline(*inputfile, line);
@@ -1069,7 +1200,8 @@ void preProcessor(string fileName, bool twoFiles) {
         }
       }
       if (hasEQU == 0) {
-        cout << "ERRO SEMANTICO:  IF UTILIZANDO LABEL QUE NÃO FOI DECLARADA NO "
+        cout << "ERRO SEMANTICO:  IF UTILIZANDO LABEL QUE NÃO FOI DECLARADA "
+                "NO "
                 "EQU! lINHA? "
              << lineCount << endl;
       } else {
@@ -1172,14 +1304,11 @@ void preProcessor(string fileName, bool twoFiles) {
     }
   }
   if (beginFound != endFound) {
-     cout << "ERROR: BEGIN e END utilizados de maneira inválida"
-           << endl;
-      exit(0);
+    cout << "ERROR: BEGIN e END utilizados de maneira inválida" << endl;
+    exit(0);
   }
 
   preFile.close();
-
-  symbolTableCheck();
 
   outfile.close();
 }
