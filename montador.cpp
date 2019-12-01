@@ -407,9 +407,9 @@ void addDefinitionTable() {
 
 void updateDefinitionTable() {
   for (symbol s : symbol_table) {
-    for (definitions d : definitions_table) {
-      if (d.name == s.name) {
-        d.value = s.value;
+    for (int i = 0; i < (int)definitions_table.size(); i++) {
+      if (definitions_table[i].name == s.name) {
+        definitions_table[i].value = s.value;
       }
     }
   }
@@ -429,8 +429,6 @@ void symbolTableCheck() {
       cout << "[symbolTableCheck] "
            << "ERRO SEMANTICO: Símbolo " << s.name
            << " não definido Linha: " << lineCount << endl;
-
-      updateDefinitionTable();
     }
   }
 
@@ -439,6 +437,7 @@ void symbolTableCheck() {
     cout << "[UseTableCheck] "
          << "name " << u.name << "  " << u.address << endl;
   }
+
   cout << endl;
   for (definitions d : definitions_table) {
     cout << "[DefinitionsTableCheck] "
@@ -1005,13 +1004,19 @@ void singlePass(string fileName) {
   fileName.replace(offset, 4, ".obj");
   ofstream outfile(fileName);
   outfile << "H: " << printfileName << endl;
-  outfile << "H: " << textLength - 1 << endl;
+  outfile << "H: " << positionCount << endl;
   outfile << "H: ";
   for (int w = 0; w < textLength; w++) {
     int flag = 0;
-    for (use u : use_table) {
-      if (u.address == w) {
-        flag = 1;
+    for (symbol s : symbol_table) {
+      for (use u : use_table) {
+        if (s.name != u.name) {
+          for (auto i : s.list) {
+            if (i == w) {
+              flag = 1;
+            }
+          }
+        }
       }
     }
     if (flag == 1) {
@@ -1021,16 +1026,16 @@ void singlePass(string fileName) {
     }
   }
   outfile << endl;
-  outfile << "H: " << use_table.size();
+  outfile << "H:";
   for (use u : use_table) {
     outfile << " " << u.name << " " << u.address;
   }
-  outfile << endl;
-  outfile << "H: " << definitions_table.size();
+  outfile << " " << endl;
+  outfile << "H:";
   for (definitions d : definitions_table) {
     outfile << " " << d.name << " " << d.value;
   }
-  outfile << endl;
+  outfile << " " << endl;
   outfile << "T: ";
   int j = 0;
   for (auto pre : prelinhas) {

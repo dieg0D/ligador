@@ -17,9 +17,9 @@ Fixar o funcionamento de um processo de tradução. Especificamente as de carreg
 
 - [x] Receber e abrir um ou dois arquivos
 - [x] Checagem das Diretivas BEGIN e END
-- [ ] Inserir dados na tabela de definições
-- [ ] Inserir dados na tabela de uso
-- [ ] Gerar arquio obj com Nome do programa, tamanho do código e informação de realocação. 
+- [x] Inserir dados na tabela de definições
+- [x] Inserir dados na tabela de uso
+- [x] Gerar arquivo obj com Nome do programa, tamanho do código e informação de realocação. 
 
 #### Ligador:
 - [ ] Receber e abrir os dois arquivos
