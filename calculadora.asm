@@ -1,8 +1,11 @@
 ; ------------------------------------------
-; Trabajo 2 de Software Basico
-; Alumnos: Dieguito y Icarito
+; Trabalho 2 de Software Basico
+; Alunos: Diego Antônio Barbosa Cardoso - 16/0005116
+;         Icaro Nery Rezende            - 15/0037023
+; Poesia para os seus ouvidos, sr. monitor:
 ; "Peteca es peteca, yuca es yuca"
 ; "Unos jugan de frente, otros jugan de espaldas"
+; Essa é mais uma do João Brasil.
 ; ------------------------------------------
 
 
