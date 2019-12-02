@@ -61,3 +61,11 @@ Em seu Terminal rode o comando `nasm -f elf -o calculadora.o calculadora.asm && 
 - [x] Função para escrita de numero inteiro
 - [x] Função para leitura de strings
 - [x] Função para escrita de strings
+
+## Ambiente utilizado para testes
+
+- Sistema Operacional: Pop!_OS 19.10 x86_64 (Baseado em Ubuntu 19.10)
+- Kernel: 5.3.0-22-generic 
+- g++ (Ubuntu 9.2.1-9ubuntu2) 9.2.1 20191008
+- NASM version 2.14.02
+- GNU ld (GNU Binutils for Ubuntu) 2.33
