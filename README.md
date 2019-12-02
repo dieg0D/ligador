@@ -1,3 +1,9 @@
+# Trabalho 2 de Software Basico
+
+Alunos: 
+- Diego Antônio Barbosa Cardoso - 16/0005116
+- Icaro Nery Rezende            - 15/0037023
+
 # Ligador
 Este repositório contém o Projeto 2 da Disciplina Software Básico de 2019/2. O trabalho consiste em implementar em C/C++ um ligador da linguagem  assembly hipotética vista em sala de aula. E além disso uma calculadora em NASM.
 
